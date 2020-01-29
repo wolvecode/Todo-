@@ -1,47 +1,26 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const helmet = require('helmet')
-const { NotFound, ServiceUnavailable } = require('./exceptions/Error')
+const { handleError, handleServerError } = require('./exceptions/errorHandlers')
 const mongoose = require('mongoose')
+const cors = require('cors')
 const app = express()
 
 const Todo = mongoose.model('Todo')
 
 app.use(helmet())
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(cors())
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
-app.get('/', (req, res, next) => {
-    Todo.find({})
-        .then(todos => res.json({
-            data: todos
-        }))
-        .catch(next)
-})
+app.use('/', require('./routes/index'))
+/**
+ * Route for handling todos actions
+ */
+app.use('/todo', require('./routes/todo'))
 
-app.post('/', (req, res, next) => {
-    if (!req.body.title)
-        return next(new NotFound('Bad request', 400))
+app.use(handleError)
 
-    Todo.create(req.body)
-        .then(todo => res.json(todo))
-        .catch(e => next(error))
-})
-
-app.use((error, req, res, next) => {
-   if (error.status >= 400 && error.status <= 499) {
-        return res.status(error.status || 404).json({
-            errorMessage: error.message
-        })
-   }
-
-   next(error)
-})
-
-app.use((error, req, res, next) => {
-    res.status(error.status || 503).json({
-        msg: 'Server temporary unavailable'
-    })
-})
+app.use(handleServerError)
 
 module.exports = app
