@@ -13,7 +13,6 @@ exports.getAllTodos = (req, res, next) => {
         }))
         .catch(next)
 }
-
 /**
  * Add new todo to user Todo list
  */
